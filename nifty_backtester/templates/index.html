@@ -11,32 +11,51 @@
         input, select { width: 300px; padding: 0.5em; }
         .results { margin-top: 2em; border-top: 1px solid #ccc; padding-top: 1em; }
         pre { background-color: #f4f4f4; padding: 1em; border-radius: 5px; }
+        .warning { background-color: #fffbe6; border: 1px solid #ffe58f; padding: 1em; margin-bottom: 2em; border-radius: 5px; }
+        .login-status { margin-bottom: 2em; padding: 1em; border-radius: 5px; }
+        .login-status.logged-in { background-color: #e6ffed; border: 1px solid #b7eb8f; }
+        .login-status.logged-out { background-color: #fff1f0; border: 1px solid #ffa39e; }
     </style>
 </head>
 <body>
-    <div style="background-color: #fffbe6; border: 1px solid #ffe58f; padding: 1em; margin-bottom: 2em; border-radius: 5px;">
+    <div class="warning">
         <p><strong>⚠️ Security Warning:</strong> Please be cautious with your API credentials. This tool is designed for local use only. Do not run it on a public server or share your credentials.</p>
         <p><strong>📝 Strategy Notes:</strong>
             <ul>
                 <li>The strategy sells the option strike price nearest to the money (ATM) at the time of the signal.</li>
-                <li>The weekly expiry calculation does not account for market holidays and assumes the expiry is on a Thursday. This may lead to inaccuracies if an expiry falls on a holiday.</li>
+                <li>The weekly expiry calculation does not account for market holidays and assumes the expiry is on a Thursday. This may lead to inaccuracies.</li>
+                <li>You must set the Redirect URL in your Kite App to: <strong>http://127.0.0.1:5001/kite_callback</strong></li>
             </ul>
         </p>
     </div>
+
     <h1>Nifty Option Strategy Backtester</h1>
+
+    {% if logged_in %}
+        <div class="login-status logged-in">
+            <p><strong>Login Status:</strong> Connected to Kite.</p>
+        </div>
+    {% else %}
+        <div class="login-status logged-out">
+            <p><strong>Login Status:</strong> Not connected. Please login with your Kite credentials.</p>
+            <form action="/login" method="post">
+                <div class="form-group">
+                    <label for="api_key">API Key</label>
+                    <input type="text" id="api_key" name="api_key" required>
+                </div>
+                <div class="form-group">
+                    <label for="api_secret">API Secret</label>
+                    <input type="password" id="api_secret" name="api_secret" required>
+                </div>
+                <button type="submit">Login with Kite</button>
+            </form>
+        </div>
+    {% endif %}
+
+    <hr>
+
+    <h2>Run Backtest</h2>
     <form action="/run_backtest" method="post">
-        <div class="form-group">
-            <label for="api_key">API Key</label>
-            <input type="text" id="api_key" name="api_key" required>
-        </div>
-        <div class="form-group">
-            <label for="api_secret">API Secret</label>
-            <input type="password" id="api_secret" name="api_secret" required>
-        </div>
-        <div class="form-group">
-            <label for="access_token">Access Token (Generate this once)</label>
-            <input type="password" id="access_token" name="access_token" required>
-        </div>
         <div class="form-group">
             <label for="from_date">From Date</label>
             <input type="date" id="from_date" name="from_date" required>
@@ -72,7 +91,7 @@
             <label for="sd_multiple">Standard Deviation Multiple</label>
             <input type="number" id="sd_multiple" name="sd_multiple" step="0.1" value="1.0" required>
         </div>
-        <button type="submit">Run Backtest</button>
+        <button type="submit" {% if not logged_in %}disabled{% endif %}>Run Backtest</button>
     </form>
 
     <div class="results">

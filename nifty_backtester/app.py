@@ -1,5 +1,5 @@
 import datetime
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session, redirect, url_for
 from kiteconnect import KiteConnect
 import pandas as pd
 import logging
@@ -9,6 +9,21 @@ import os
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24) # Needed for session management
+
+# --- Token Management ---
+def save_token(data):
+    with open("kite_session.json", "w") as f:
+        import json
+        json.dump(data, f)
+
+def load_token():
+    try:
+        with open("kite_session.json", "r") as f:
+            import json
+            return json.load(f)
+    except FileNotFoundError:
+        return None
 
 # --- Helper Functions ---
 
@@ -95,14 +110,46 @@ def calculate_avwap(df, sd_multiple=1.0):
 
 @app.route('/')
 def index():
-    return render_template('index.html', results={})
+    session_data = load_token()
+    logged_in = "access_token" in session_data if session_data else False
+    return render_template('index.html', results={}, logged_in=logged_in)
+
+@app.route('/login', methods=['POST'])
+def login():
+    from flask import session
+    session["api_key"] = request.form.get('api_key')
+    session["api_secret"] = request.form.get('api_secret')
+    kite = KiteConnect(api_key=session["api_key"])
+    return redirect(kite.login_url())
+
+@app.route('/kite_callback')
+def kite_callback():
+    from flask import session, redirect, url_for
+    request_token = request.args.get('request_token')
+    if not request_token:
+        return "Error: Could not get request token.", 400
+
+    try:
+        kite = KiteConnect(api_key=session["api_key"])
+        session_data = kite.generate_session(request_token, api_secret=session["api_secret"])
+        session_data['api_key'] = session["api_key"] # Add api_key to the session data
+        save_token(session_data)
+        logging.info("Successfully generated and saved Kite session.")
+        return redirect(url_for('index'))
+    except Exception as e:
+        logging.error(f"Error generating session: {e}")
+        return f"Error generating session: {e}", 400
 
 @app.route('/run_backtest', methods=['POST'])
 def run_backtest():
     # --- 1. Get Parameters ---
-    api_key = request.form.get('api_key')
-    api_secret = request.form.get('api_secret')
-    access_token = request.form.get('access_token')
+    session_data = load_token()
+    if not session_data:
+        return render_template('index.html', results={"status": "Error", "message": "Not logged in. Please login first."})
+
+    api_key = session_data.get('api_key')
+    access_token = session_data.get('access_token')
+
     from_date_str = request.form.get('from_date')
     to_date_str = request.form.get('to_date')
     instrument_name = request.form.get('instrument')
