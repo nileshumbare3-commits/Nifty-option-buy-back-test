@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nifty Option Strategy Backtester</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        .form-group { margin-bottom: 1em; }
+        label { display: block; margin-bottom: 0.5em; }
+        input, select { width: 300px; padding: 0.5em; }
+        .results { margin-top: 2em; border-top: 1px solid #ccc; padding-top: 1em; }
+        pre { background-color: #f4f4f4; padding: 1em; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div style="background-color: #fffbe6; border: 1px solid #ffe58f; padding: 1em; margin-bottom: 2em; border-radius: 5px;">
+        <p><strong>⚠️ Security Warning:</strong> Please be cautious with your API credentials. This tool is designed for local use only. Do not run it on a public server or share your credentials.</p>
+        <p><strong>📝 Strategy Notes:</strong>
+            <ul>
+                <li>The strategy sells the option strike price nearest to the money (ATM) at the time of the signal.</li>
+                <li>The weekly expiry calculation does not account for market holidays and assumes the expiry is on a Thursday. This may lead to inaccuracies if an expiry falls on a holiday.</li>
+            </ul>
+        </p>
+    </div>
+    <h1>Nifty Option Strategy Backtester</h1>
+    <form action="/run_backtest" method="post">
+        <div class="form-group">
+            <label for="api_key">API Key</label>
+            <input type="text" id="api_key" name="api_key" required>
+        </div>
+        <div class="form-group">
+            <label for="api_secret">API Secret</label>
+            <input type="password" id="api_secret" name="api_secret" required>
+        </div>
+        <div class="form-group">
+            <label for="access_token">Access Token (Generate this once)</label>
+            <input type="password" id="access_token" name="access_token" required>
+        </div>
+        <div class="form-group">
+            <label for="from_date">From Date</label>
+            <input type="date" id="from_date" name="from_date" required>
+        </div>
+        <div class="form-group">
+            <label for="to_date">To Date</label>
+            <input type="date" id="to_date" name="to_date" required>
+        </div>
+        <div class="form-group">
+            <label for="instrument">Instrument</label>
+            <select id="instrument" name="instrument">
+                <option value="NIFTY">NIFTY</option>
+                <option value="BANKNIFTY">BANKNIFTY</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="stop_loss">Stop Loss (in Rs.)</label>
+            <input type="number" id="stop_loss" name="stop_loss" value="1500" required>
+        </div>
+        <div class="form-group">
+            <label for="target_profit">Target Profit (in Rs.)</label>
+            <input type="number" id="target_profit" name="target_profit" value="4500" required>
+        </div>
+        <div class="form-group">
+            <label for="lot_size">Lot Size</label>
+            <input type="number" id="lot_size" name="lot_size" value="50" required>
+        </div>
+        <div class="form-group">
+            <label for="strike_diff">Strike Difference (for spread)</label>
+            <input type="number" id="strike_diff" name="strike_diff" value="300" required>
+        </div>
+        <div class="form-group">
+            <label for="sd_multiple">Standard Deviation Multiple</label>
+            <input type="number" id="sd_multiple" name="sd_multiple" step="0.1" value="1.0" required>
+        </div>
+        <button type="submit">Run Backtest</button>
+    </form>
+
+    <div class="results">
+        <h2>Results</h2>
+        <pre>{{ results | tojson(indent=4) }}</pre>
+    </div>
+
+    <script>
+        document.getElementById('instrument').addEventListener('change', function() {
+            var lotSizeInput = document.getElementById('lot_size');
+            if (this.value === 'NIFTY') {
+                lotSizeInput.value = 50;
+            } else if (this.value === 'BANKNIFTY') {
+                lotSizeInput.value = 15;
+            }
+        });
+    </script>
+</body>
+</html>
