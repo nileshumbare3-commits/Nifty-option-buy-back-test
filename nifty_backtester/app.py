@@ -12,14 +12,18 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24) # Needed for session management
 
 # --- Token Management ---
+# Get the absolute path for the directory where this script is located
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+TOKEN_PATH = os.path.join(SCRIPT_DIR, "kite_session.json")
+
 def save_token(data):
-    with open("kite_session.json", "w") as f:
+    with open(TOKEN_PATH, "w") as f:
         import json
         json.dump(data, f)
 
 def load_token():
     try:
-        with open("kite_session.json", "r") as f:
+        with open(TOKEN_PATH, "r") as f:
             import json
             return json.load(f)
     except FileNotFoundError:
